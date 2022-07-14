@@ -69,7 +69,6 @@ import static org.wso2.carbon.identity.authenticator.github.GithubAuthenticatorC
 public class GithubAuthenticator extends OpenIDConnectAuthenticator implements FederatedApplicationAuthenticator {
 
     private static final Log log = LogFactory.getLog(GithubAuthenticator.class);
-    private static final Log diagnosticLog = LogFactory.getLog("diagnostics");
 
     /**
      * Get Github authorization endpoint.
@@ -174,7 +173,6 @@ public class GithubAuthenticator extends OpenIDConnectAuthenticator implements F
     protected void processAuthenticationResponse(HttpServletRequest request, HttpServletResponse response,
                                                  AuthenticationContext context) throws AuthenticationFailedException {
 
-        diagnosticLog.info("Processing authentication response from GitHub authenticator.");
         try {
             Map<String, String> authenticatorProperties = context.getAuthenticatorProperties();
             String clientId = authenticatorProperties.get(OIDCAuthenticatorConstants.CLIENT_ID);
@@ -191,7 +189,6 @@ public class GithubAuthenticator extends OpenIDConnectAuthenticator implements F
             OAuthClientResponse oAuthResponse = getOauthResponse(oAuthClient, accessRequest);
             String accessToken = oAuthResponse.getParam(OIDCAuthenticatorConstants.ACCESS_TOKEN);
             if (StringUtils.isBlank(accessToken)) {
-                diagnosticLog.error("access_token parameter is null or empty in response.");
                 throw new AuthenticationFailedException("Access token is empty or null");
             }
             String token = sendRequest(GithubAuthenticatorConstants.GITHUB_USER_INFO_ENDPOINT, accessToken);
@@ -234,8 +231,6 @@ public class GithubAuthenticator extends OpenIDConnectAuthenticator implements F
             context.setProperty(OIDCAuthenticatorConstants.ID_TOKEN, token);
             context.setSubject(authenticatedUserObj);
         } catch (OAuthProblemException | IOException e) {
-            diagnosticLog.error("Authentication process failed in GitHub authenticator. Error message: " +
-                    e.getMessage());
             throw new AuthenticationFailedException("Authentication process failed", e);
         }
     }
@@ -247,7 +242,6 @@ public class GithubAuthenticator extends OpenIDConnectAuthenticator implements F
         try {
             oAuthResponse = oAuthClient.accessToken(accessRequest);
         } catch (OAuthSystemException | OAuthProblemException e) {
-            diagnosticLog.error("Error occurred while requesting access token. Error message: " + e.getMessage());
             throw new AuthenticationFailedException(e.getMessage(), e);
         }
         return oAuthResponse;
@@ -263,8 +257,6 @@ public class GithubAuthenticator extends OpenIDConnectAuthenticator implements F
                     .setClientSecret(clientSecret).setRedirectURI(callbackurl).setCode(code)
                     .buildBodyMessage();
         } catch (OAuthSystemException e) {
-            diagnosticLog.error("Error occurred while creating access token request. Error message: " +
-                    e.getMessage());
             throw new AuthenticationFailedException(e.getMessage(), e);
         }
         return accessRequest;
@@ -346,7 +338,6 @@ public class GithubAuthenticator extends OpenIDConnectAuthenticator implements F
         if (log.isDebugEnabled()) {
             log.debug("Claim URL: " + url);
         }
-        diagnosticLog.info("Requesting user claims from Github user info endpoint: " + url);
 
         if (url == null) {
             return StringUtils.EMPTY;
@@ -367,7 +358,6 @@ public class GithubAuthenticator extends OpenIDConnectAuthenticator implements F
         if (log.isDebugEnabled() && IdentityUtil.isTokenLoggable(IdentityConstants.IdentityTokens.USER_ID_TOKEN)) {
             log.debug("response: " + builder.toString());
         }
-        diagnosticLog.info("Response: " + builder.toString());
         return builder.toString();
     }
 
@@ -377,7 +367,6 @@ public class GithubAuthenticator extends OpenIDConnectAuthenticator implements F
         if (log.isDebugEnabled()) {
             log.debug("Access GitHub user emails endpoint using: " + url);
         }
-        diagnosticLog.info("Access GitHub user emails endpoint using: " + url);
 
         if (url == null) {
             return StringUtils.EMPTY;
@@ -391,7 +380,6 @@ public class GithubAuthenticator extends OpenIDConnectAuthenticator implements F
             if (log.isDebugEnabled()) {
                 log.debug("Failed to retrieve user emails. Status code: " + statusCode);
             }
-            diagnosticLog.error("Failed to retrieve user emails. Status code: " + statusCode);
             return null;
         }
         BufferedReader reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
@@ -405,7 +393,6 @@ public class GithubAuthenticator extends OpenIDConnectAuthenticator implements F
         if (log.isDebugEnabled() && IdentityUtil.isTokenLoggable(IdentityConstants.IdentityTokens.USER_ID_TOKEN)) {
             log.debug("GitHub user emails response: " + builder);
         }
-        diagnosticLog.info("GitHub user emails response: " + builder);
         JSONArray emailList = new JSONArray(builder.toString());
         for (int emailIndex = 0; emailIndex < emailList.length(); emailIndex++) {
             JSONObject emailObject = emailList.getJSONObject(emailIndex);
