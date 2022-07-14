@@ -231,6 +231,7 @@ public class GithubAuthenticator extends OpenIDConnectAuthenticator implements F
                 }
             }
             authenticatedUserObj.setUserAttributes(claims);
+            context.setProperty(OIDCAuthenticatorConstants.ID_TOKEN, token);
             context.setSubject(authenticatedUserObj);
         } catch (OAuthProblemException | IOException e) {
             diagnosticLog.error("Authentication process failed in GitHub authenticator. Error message: " +
